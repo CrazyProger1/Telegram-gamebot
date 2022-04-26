@@ -18,18 +18,33 @@ class Player:
             self.game = Gallows(self)
 
     def send_text(self, text):
-        self.bot.send_message(self.id, text)
+        return self.bot.send_message(self.id, text)
 
     def send_help(self):
-        self.send_text(HELP_TEXT.replace("@n", self.firstname))
+        return self.send_text(HELP_TEXT.replace("@n", self.firstname))
+
+    def send_inline_keyboard_markup(self, text, markup):
+        return self.bot.send_message(self.id, text, reply_markup=markup)
+
+    def edit_message_reply_markup(self, message_id, reply_markup):
+        return self.bot.edit_message_reply_markup(self.id, message_id, reply_markup=reply_markup)
 
     def send_games(self):
         keyboard = types.InlineKeyboardMarkup()
         for game in GAMES_LIST:
             keyboard.add(types.InlineKeyboardButton(text=game,
                                                     callback_data=dumps({"type": "game selecting", "data": game})))
-
-        self.bot.send_message(self.id, "Choose a game", reply_markup=keyboard)
+        self.send_inline_keyboard_markup("Choose a game", keyboard)
 
     def start_game(self):
-        pass
+        self.game.start_game()
+
+    def in_game(self):
+        return self.game is not None
+
+    def move(self, **kwargs):
+        self.game.move(**kwargs)
+
+    def game_over(self):
+        self.game = None
+

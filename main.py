@@ -35,6 +35,9 @@ class App:
             player.set_game(data.get("data"))
             player.start_game()
 
+        if player.in_game() and data.get("type") == "in game":
+            player.move(data=data.get("data"))
+
     def run(self):
         self.bot.message_handler(commands=["start", "help", "games"])(self.handle_command)
         self.bot.callback_query_handler(func=lambda call: True)(self.callback_handler)
@@ -44,4 +47,3 @@ class App:
 if __name__ == '__main__':
     app = App()
     app.run()
-
