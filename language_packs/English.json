@@ -1,0 +1,16 @@
+{
+  "riddles_pack": "riddles/riddles_en.json",
+  "alphabet": "abcdefghijklmnopqrstuvwxyz",
+  "help_text": "Hello @n, choose a game and enjoy /games 🎲 or select other language /languages",
+  "game_choosing_text": "Choose a game:",
+  "lang_choosing_text": "Choose a language:",
+  "symbol_text": "You are @s",
+  "won_text": "@s won!",
+  "draw_text": "Draw!",
+  "letter_choosing_text": "Choose a letter:",
+  "riddle_text": "Riddle:\n@r",
+  "guessed_text": "Guessed: @g",
+  "game_over_text": "Game over, you died ☠",
+  "you_won_text": "You won!! \uD83C\uDF89",
+  "language_selected_text": "Language selected \uD83C\uDDFA\uD83C\uDDF8"
+}

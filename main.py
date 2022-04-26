@@ -25,21 +25,29 @@ class App:
             player.send_help()
         elif command.text == "/games":
             player.send_games()
+        elif command.text == "/languages":
+            player.send_language_selection()
 
     def callback_handler(self, call: types.CallbackQuery):
         data: dict = loads(call.data)
 
         player = self.add_player(call.from_user)
 
-        if data.get("type") == "game selecting":
+        callback_type = data.get("type")
+
+        if callback_type == "game selecting":
             player.set_game(data.get("data"))
             player.start_game()
 
-        if player.in_game() and data.get("type") == "in game":
+        elif callback_type == "language selecting":
+            player.set_language(data.get("data"))
+            player.send_text(player.translator["language_selected_text"])
+
+        elif player.in_game() and callback_type == "in game":
             player.move(data=data.get("data"))
 
     def run(self):
-        self.bot.message_handler(commands=["start", "help", "games"])(self.handle_command)
+        self.bot.message_handler(commands=["start", "help", "games", "languages"])(self.handle_command)
         self.bot.callback_query_handler(func=lambda call: True)(self.callback_handler)
         self.bot.polling(True)
 

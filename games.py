@@ -91,7 +91,9 @@ class TicTacToe(Game):
                 row = []
 
         if not self.message_id:
-            self.message_id = self.player.send_inline_keyboard_markup(f"You are {self.symbol}", keyboard)
+            self.message_id = self.player.send_inline_keyboard_markup(
+                self.player.translator["symbol_text"].replace("@s", self.symbol)
+                , keyboard)
         else:
             self.player.edit_message_reply_markup(self.message_id, keyboard)
 
@@ -124,20 +126,21 @@ class TicTacToe(Game):
                     != " ":
                 self.player.game_over()
                 won = self.state.get(combination[0])
-                self.player.send_text(f"{won} won!" + ("🎉", "🤖")[won != self.symbol])
+                self.player.send_text(
+                    self.player.translator["won_text"].replace("@s", won) + ("🎉", "🤖")[won != self.symbol])
                 return True
 
         if tuple(self.state.values()).count(" ") == 0 or self.state.get(0) is not None:
             self.player.game_over()
-            self.player.send_text(f"Draw!")
+            self.player.send_text(self.player.translator["draw_text"])
             return True
 
 
 class Gallows(Game):
     def __init__(self, player):
-        self.word, self.riddle = self.get_random_riddle("riddles.json")
-        self.guessed = "_" * len(self.word)
-        self.available_letters = list("абвгдеёжзийклмнопрстуфхцчшщъыьэюя")
+        self.word, self.riddle = self.get_random_riddle(player.translator["riddles_pack"])
+        self.available_letters = list(player.translator["alphabet"])
+        self.guessed = "".join("_" if letter in self.available_letters else letter for letter in self.word)
         self.keyboard_message_id = 0
         self.riddle_message_id = 0
         self.gallows_message_id = 0
@@ -168,20 +171,24 @@ class Gallows(Game):
             keyboard.add(*row)
 
         if not self.keyboard_message_id:
-            self.keyboard_message_id = self.player.send_inline_keyboard_markup(f"Choose a letter", keyboard)
+            self.keyboard_message_id = self.player.send_inline_keyboard_markup(
+                self.player.translator["letter_choosing_text"], keyboard)
         else:
             self.player.edit_message_reply_markup(self.keyboard_message_id, keyboard)
 
     def send_riddle(self):
         if not self.riddle_message_id:
-            self.riddle_message_id = self.player.send_text("Riddle:\n" + self.riddle)
+            self.riddle_message_id = self.player.send_text(
+                self.player.translator["riddle_text"].replace("@r", self.riddle))
 
     def send_guessed(self):
 
         if not self.guessed_message_id:
-            self.guessed_message_id = self.player.send_text("Guessed: " + self.guessed)
+            self.guessed_message_id = self.player.send_text(
+                self.player.translator["guessed_text"].replace("@g", self.guessed))
         else:
-            self.player.edit_text(self.guessed_message_id, "Guessed: " + self.guessed)
+            self.player.edit_text(self.guessed_message_id,
+                                  self.player.translator["guessed_text"].replace("@g", self.guessed))
 
     def send_gallows(self):
         if not self.gallows_message_id:
@@ -221,11 +228,11 @@ class Gallows(Game):
 
     def check_game_over(self):
         if self.status == 0:
-            self.player.send_text("Game over, you died ☠")
+            self.player.send_text(self.player.translator["game_over_text"])
             self.player.game_over()
             return True
 
         if self.guessed.count("_") == 0:
-            self.player.send_text("You won!! 🎉")
+            self.player.send_text(self.player.translator["you_won_text"])
             self.player.game_over()
             return True
