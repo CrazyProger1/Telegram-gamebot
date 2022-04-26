@@ -1,6 +1,6 @@
 from random import randint
 from telebot import types
-from json import dumps, loads
+from json import dumps, load
 
 WINNING_COMBINATIONS = [
     [1, 2, 3],
@@ -91,9 +91,9 @@ class TicTacToe(Game):
                 row = []
 
         if not self.message_id:
-            self.message_id = self.player.send_inline_keyboard_markup(f"You are {self.symbol}", keyboard).id
+            self.message_id = self.player.send_inline_keyboard_markup(f"You are {self.symbol}", keyboard)
         else:
-            self.message_id = self.player.edit_message_reply_markup(self.message_id, keyboard).id
+            self.player.edit_message_reply_markup(self.message_id, keyboard)
 
     def start_game(self):
         self.send_field()
@@ -103,7 +103,7 @@ class TicTacToe(Game):
             self.send_field()
 
     def move(self, **kwargs):
-        cell_number: dict = kwargs.get("data")
+        cell_number: int = kwargs.get("data")
         if self.state.get(cell_number) == " ":
             self.state.update({cell_number: self.symbol})
             self.send_field()
@@ -132,4 +132,91 @@ class TicTacToe(Game):
 
 class Gallows(Game):
     def __init__(self, player):
+        self.word, self.riddle = self.get_random_riddle("riddles.json")
+        self.guessed = "_" * len(self.word)
+        self.available_letters = list("абвгдеёжзийклмнопрстуфхцчшщъыьэюя")
+        self.keyboard_message_id = 0
+        self.riddle_message_id = 0
+        self.gallows_message_id = 0
+        self.guessed_message_id = 0
+        self.status = 6
         Game.__init__(self, player)
+
+    @staticmethod
+    def get_random_riddle(filepath):
+        with open(filepath, "r", encoding='utf-8') as rf:
+            riddles: dict = load(rf)
+        random_word = tuple(riddles.keys())[randint(0, len(riddles) - 1)]
+        return random_word, riddles.get(random_word)
+
+    def send_keyboard(self):
+        keyboard = types.InlineKeyboardMarkup()
+        row = []
+        for letter in self.available_letters:
+            row.append(types.InlineKeyboardButton(
+                text=letter,
+                callback_data=dumps({"type": "in game", "data": letter})))
+
+            if len(row) == 3:
+                keyboard.add(*row)
+                row = []
+
+        if len(row) > 0:
+            keyboard.add(*row)
+
+        if not self.keyboard_message_id:
+            self.keyboard_message_id = self.player.send_inline_keyboard_markup(f"Choose a letter", keyboard)
+        else:
+            self.player.edit_message_reply_markup(self.keyboard_message_id, keyboard)
+
+    def send_riddle(self):
+        if not self.riddle_message_id:
+            self.riddle_message_id = self.player.send_text("Riddle:\n" + self.riddle)
+
+    def send_guessed(self):
+
+        if not self.guessed_message_id:
+            self.guessed_message_id = self.player.send_text("Guessed: " + self.guessed)
+        else:
+            self.player.edit_text(self.guessed_message_id, "Guessed: " + self.guessed)
+
+    def send_gallows(self):
+        if not self.gallows_message_id:
+            self.gallows_message_id = self.player.send_photo(f"imgs/{self.status}.png")
+        else:
+            self.player.edit_photo(self.gallows_message_id,
+                                   f"imgs/{self.status}.png")
+
+    def start_game(self):
+        self.send_gallows()
+        self.send_riddle()
+        self.send_guessed()
+        self.send_keyboard()
+
+    def move(self, **kwargs):
+        supposed_letter: str = kwargs.get("data")
+
+        if supposed_letter in self.word:
+            for i, letter in enumerate(self.word):
+                if letter == supposed_letter:
+                    self.guessed = self.guessed[:i] + letter + self.guessed[i + 1:]
+
+            self.send_guessed()
+            self.check_game_over()
+
+        else:
+            self.status -= 1
+            self.check_game_over()
+            self.send_gallows()
+
+        self.available_letters.remove(supposed_letter)
+        self.send_keyboard()
+
+    def check_game_over(self):
+        if self.status == 0:
+            self.player.send_text("Game over, you died ☠")
+            self.player.game_over()
+
+        if self.guessed.count("_") == 0:
+            self.player.send_text("You won!! 🎉")
+            self.player.game_over()
