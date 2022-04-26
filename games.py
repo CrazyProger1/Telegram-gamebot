@@ -108,26 +108,29 @@ class TicTacToe(Game):
             self.state.update({cell_number: self.symbol})
             self.send_field()
             if self.check_game_over():
+                self.player.send_games()
                 return
             self.bot.move()
             self.send_field()
             if self.check_game_over():
+                self.player.send_games()
                 return
 
     def check_game_over(self):
-        if tuple(self.state.values()).count(" ") == 0 or self.state.get(0) is not None:
-            self.player.game_over()
-            self.player.send_text(f"Draw!")
-            return True
-
         for combination in WINNING_COMBINATIONS:
             if self.state.get(combination[0]) \
                     == self.state.get(combination[1]) \
                     == self.state.get(combination[2]) \
                     != " ":
                 self.player.game_over()
-                self.player.send_text(f"{self.state.get(combination[0])} won!")
+                won = self.state.get(combination[0])
+                self.player.send_text(f"{won} won!" + ("🎉", "🤖")[won != self.symbol])
                 return True
+
+        if tuple(self.state.values()).count(" ") == 0 or self.state.get(0) is not None:
+            self.player.game_over()
+            self.player.send_text(f"Draw!")
+            return True
 
 
 class Gallows(Game):
@@ -202,11 +205,15 @@ class Gallows(Game):
                     self.guessed = self.guessed[:i] + letter + self.guessed[i + 1:]
 
             self.send_guessed()
-            self.check_game_over()
+            if self.check_game_over():
+                self.player.send_games()
+                return
 
         else:
             self.status -= 1
-            self.check_game_over()
+            if self.check_game_over():
+                self.player.send_games()
+                return
             self.send_gallows()
 
         self.available_letters.remove(supposed_letter)
@@ -216,7 +223,9 @@ class Gallows(Game):
         if self.status == 0:
             self.player.send_text("Game over, you died ☠")
             self.player.game_over()
+            return True
 
         if self.guessed.count("_") == 0:
             self.player.send_text("You won!! 🎉")
             self.player.game_over()
+            return True
