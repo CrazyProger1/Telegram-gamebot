@@ -194,7 +194,7 @@ class Gallows(Game):
         with open(filepath, "r", encoding='utf-8') as rf:
             riddles: dict = load(rf)
         random_word = tuple(riddles.keys())[randint(0, len(riddles) - 1)]
-        return random_word, riddles.get(random_word)
+        return random_word.casefold(), riddles.get(random_word)
 
     def _send_keyboard(self):
         keyboard = types.InlineKeyboardMarkup()
