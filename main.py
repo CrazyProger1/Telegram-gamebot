@@ -23,12 +23,17 @@ class App:
     def handle_command(self, command: types.Message):
         player = self.add_player(command.from_user)
 
-        if command.text in ["/start", "/help"]:
-            player.send_help()
-        elif command.text == "/games":
-            player.send_games()
-        elif command.text == "/languages":
-            player.send_language_selection()
+        if not player.in_game():
+            if command.text in ["/start", "/help"]:
+                player.send_help()
+            elif command.text == "/games":
+                player.send_games()
+            elif command.text == "/languages":
+                player.send_language_selection()
+
+        if command.text == "/exit" and player.in_game():
+            player.game_over()
+            player.send_text(player.translator["game_stopped_text"])
 
     def callback_handler(self, call: types.CallbackQuery):
         data: dict = loads(call.data)
@@ -41,7 +46,7 @@ class App:
             player.set_game(data.get("data"))
             player.start_game()
 
-        elif callback_type == "language selecting":
+        elif callback_type == "language selecting" and not player.in_game():
             player.set_language(data.get("data"))
             player.send_text(player.translator["language_selected_text"])
 
@@ -49,7 +54,7 @@ class App:
             player.move(data=data.get("data"))
 
     def run(self):
-        self.bot.message_handler(commands=["start", "help", "games", "languages"])(self.handle_command)
+        self.bot.message_handler(commands=["start", "help", "games", "languages", "exit"])(self.handle_command)
         self.bot.callback_query_handler(func=lambda call: True)(self.callback_handler)
         self.bot.polling(True)
 

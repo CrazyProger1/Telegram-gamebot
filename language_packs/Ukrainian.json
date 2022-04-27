@@ -12,5 +12,6 @@
   "guessed_text": "Вгадані літери: @g",
   "game_over_text": "Гру закінчено, вас повісили ☠",
   "you_won_text": "Ви виграли!! \uD83C\uDF89",
-  "language_selected_text": "Мову змінено \uD83C\uDDFA\uD83C\uDDE6"
+  "language_selected_text": "Мову змінено \uD83C\uDDFA\uD83C\uDDE6",
+  "game_stopped_text": "Гра зупинена"
 }

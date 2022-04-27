@@ -12,5 +12,6 @@
   "guessed_text": "Guessed: @g",
   "game_over_text": "Game over, you died ☠",
   "you_won_text": "You won!! \uD83C\uDF89",
-  "language_selected_text": "Language selected \uD83C\uDDFA\uD83C\uDDF8"
+  "language_selected_text": "Language selected \uD83C\uDDFA\uD83C\uDDF8",
+  "game_stopped_text": "Game stopped"
 }

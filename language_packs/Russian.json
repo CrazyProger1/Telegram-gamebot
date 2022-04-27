@@ -12,5 +12,6 @@
    "guessed_text": "Угаданны буквы: @g",
   "game_over_text": "Игра окончена, вас повесили ☠",
   "you_won_text": "Вы выиграли!! \uD83C\uDF89",
-  "language_selected_text": "Язык изменен \uD83D\uDCA9"
+  "language_selected_text": "Язык изменен \uD83D\uDCA9",
+  "game_stopped_text": "Игра остановлена"
 }
