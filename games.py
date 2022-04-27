@@ -24,63 +24,102 @@ class Game:
     def move(self, **kwargs):
         pass
 
-    def check_game_over(self):
-        pass
+    def check_game_over(self) -> bool:
+        return False
 
 
 class TicTacToeBot:
     def __init__(self, state, symbol):
-        self.state: dict = state
-        self.symbol = symbol
+        self._state: dict = state
+        self._symbol = symbol
+        self._enemy_symbol = "X" if self._symbol == "O" else "O"
+        self._first_steps_strategies = ((5, 3, 1), (1, 5, 7), (9, 5, 3),
+                                        (7, 9, 5), (7, 1, 3), (1, 3, 9),
+                                        (7, 3, 9), (7, 9, 1))
 
-    def guess_cell_number(self) -> int:
+        self._strategy: tuple | None = None
+        self._steps_counter = 0
+
+    def _is_cell_free(self, cell: int):
+        return self._state[cell] == " "
+
+    def _is_cells_free(self, cells: tuple[int]):
+        output = []
+        for cell in cells:
+            output.append(self._state[cell] == " ")
+
+        return all(output)
+
+    def _select_strategy(self, tries=0) -> tuple[int] | None:
+        if tries > len(self._first_steps_strategies):
+            return None
+
+        strategy = self._first_steps_strategies[randint(0, len(self._first_steps_strategies) - 1)]
+        if self._is_cells_free(strategy):
+            return strategy
+
+        return self._select_strategy(tries + 1)
+
+    def _guess_cell_number(self) -> int:
+        if self._strategy is None:
+            self._strategy = self._select_strategy()
+
+        if self._steps_counter < 3 and self._strategy is not None:
+            number = self._strategy[self._steps_counter]
+            if self._is_cell_free(number):
+                self._steps_counter += 1
+                return number
+
         try:
             number = randint(1, 9)
-            return number if self.state.get(number) == " " else self.guess_cell_number()
+            return number if self._is_cell_free(number) else self._guess_cell_number()
         except RecursionError:
             return 0
 
-    def find_good_position(self, symbol) -> int:
+    def _find_good_position(self, symbol) -> int:
         for combination in WINNING_COMBINATIONS:
             overlaps_num = 0
             for i in range(3):
-                if self.state.get(combination[i]) == symbol:
+                if self._state.get(combination[i]) == symbol:
                     overlaps_num += 1
 
             if overlaps_num == 2:
                 for i in range(3):
-                    if self.state.get(combination[i]) == " ":
+                    if self._is_cell_free(combination[i]):
                         return combination[i]
 
-    def choose_cell_number(self) -> int:
-        cell_number = self.find_good_position(self.symbol)
+    def _choose_cell_number(self) -> int:
+        cell_number = self._find_good_position(self._symbol)
         if cell_number:
             return cell_number
         else:
-            cell_number = self.find_good_position("X" if self.symbol == "O" else "O")
+            cell_number = self._find_good_position(self._enemy_symbol)
 
             if cell_number:
                 return cell_number
 
-        return self.guess_cell_number()
+        return self._guess_cell_number()
 
     def move(self):
-        number = self.choose_cell_number()
-        self.state.update({number: self.symbol})
+        number = self._choose_cell_number()
+        self._state.update({number: self._symbol})
 
 
 class TicTacToe(Game):
     def __init__(self, player):
-        self.symbol = "X" if randint(0, 1) else "O"
-        self.state = {i: " " for i in range(1, 10)}
-        self.message_id = 0
-        self.bot = TicTacToeBot(self.state, "X" if self.symbol == "O" else "O")
+        self._symbol = "X" if randint(0, 1) else "O"
+        self._state = {i: " " for i in range(1, 10)}
+        self._message_id = 0
+        self._bot = TicTacToeBot(self._state, "X" if self._symbol == "O" else "O")
         Game.__init__(self, player)
 
-    def send_field(self):
+    def _is_cell_free(self, cell):
+        return self._state.get(cell) == " "
+
+    def _send_field(self):
         keyboard = types.InlineKeyboardMarkup()
         row = []
-        for cell_number, text in self.state.items():
+        for cell_number, text in self._state.items():
             row.append(types.InlineKeyboardButton(
                 text=text,
                 callback_data=dumps({"type": "in game", "data": cell_number}))
@@ -90,47 +129,49 @@ class TicTacToe(Game):
                 keyboard.add(*row)
                 row = []
 
-        if not self.message_id:
-            self.message_id = self.player.send_inline_keyboard_markup(
-                self.player.translator["symbol_text"].replace("@s", self.symbol)
+        if not self._message_id:
+            self._message_id = self.player.send_inline_keyboard_markup(
+                self.player.translator["symbol_text"].replace("@s", self._symbol)
                 , keyboard)
         else:
-            self.player.edit_message_reply_markup(self.message_id, keyboard)
+            self.player.edit_message_reply_markup(self._message_id, keyboard)
 
     def start_game(self):
-        self.send_field()
-
-        if self.symbol == "O":
-            self.bot.move()
-            self.send_field()
+        self._send_field()
+        if self._symbol == "O":
+            self._bot.move()
+            self._send_field()
 
     def move(self, **kwargs):
         cell_number: int = kwargs.get("data")
-        if self.state.get(cell_number) == " ":
-            self.state.update({cell_number: self.symbol})
-            self.send_field()
-            if self.check_game_over():
-                self.player.send_games()
-                return
-            self.bot.move()
-            self.send_field()
-            if self.check_game_over():
-                self.player.send_games()
-                return
+        if not self._is_cell_free(cell_number):
+            return
+
+        self._state.update({cell_number: self._symbol})
+        self._send_field()
+        if self.check_game_over():
+            self.player.send_games()
+            return
+
+        self._bot.move()
+        self._send_field()
+        if self.check_game_over():
+            self.player.send_games()
+            return
 
     def check_game_over(self):
         for combination in WINNING_COMBINATIONS:
-            if self.state.get(combination[0]) \
-                    == self.state.get(combination[1]) \
-                    == self.state.get(combination[2]) \
+            if self._state.get(combination[0]) \
+                    == self._state.get(combination[1]) \
+                    == self._state.get(combination[2]) \
                     != " ":
                 self.player.game_over()
-                won = self.state.get(combination[0])
+                won = self._state.get(combination[0])
                 self.player.send_text(
-                    self.player.translator["won_text"].replace("@s", won) + ("🎉", "🤖")[won != self.symbol])
+                    self.player.translator["won_text"].replace("@s", won) + ("🎉", "🤖")[won != self._symbol])
                 return True
 
-        if tuple(self.state.values()).count(" ") == 0 or self.state.get(0) is not None:
+        if tuple(self._state.values()).count(" ") == 0 or self._state.get(0) is not None:
             self.player.game_over()
             self.player.send_text(self.player.translator["draw_text"])
             return True
@@ -155,7 +196,7 @@ class Gallows(Game):
         random_word = tuple(riddles.keys())[randint(0, len(riddles) - 1)]
         return random_word, riddles.get(random_word)
 
-    def send_keyboard(self):
+    def _send_keyboard(self):
         keyboard = types.InlineKeyboardMarkup()
         row = []
         for letter in self.available_letters:
@@ -176,12 +217,12 @@ class Gallows(Game):
         else:
             self.player.edit_message_reply_markup(self.keyboard_message_id, keyboard)
 
-    def send_riddle(self):
+    def _send_riddle(self):
         if not self.riddle_message_id:
             self.riddle_message_id = self.player.send_text(
                 self.player.translator["riddle_text"].replace("@r", self.riddle))
 
-    def send_guessed(self):
+    def _send_guessed(self):
 
         if not self.guessed_message_id:
             self.guessed_message_id = self.player.send_text(
@@ -190,7 +231,7 @@ class Gallows(Game):
             self.player.edit_text(self.guessed_message_id,
                                   self.player.translator["guessed_text"].replace("@g", self.guessed))
 
-    def send_gallows(self):
+    def _send_gallows(self):
         if not self.gallows_message_id:
             self.gallows_message_id = self.player.send_photo(f"imgs/{self.status}.png")
         else:
@@ -198,10 +239,10 @@ class Gallows(Game):
                                    f"imgs/{self.status}.png")
 
     def start_game(self):
-        self.send_gallows()
-        self.send_riddle()
-        self.send_guessed()
-        self.send_keyboard()
+        self._send_gallows()
+        self._send_riddle()
+        self._send_guessed()
+        self._send_keyboard()
 
     def move(self, **kwargs):
         supposed_letter: str = kwargs.get("data")
@@ -211,7 +252,7 @@ class Gallows(Game):
                 if letter == supposed_letter:
                     self.guessed = self.guessed[:i] + letter + self.guessed[i + 1:]
 
-            self.send_guessed()
+            self._send_guessed()
             if self.check_game_over():
                 self.player.send_games()
                 return
@@ -221,10 +262,10 @@ class Gallows(Game):
             if self.check_game_over():
                 self.player.send_games()
                 return
-            self.send_gallows()
+            self._send_gallows()
 
         self.available_letters.remove(supposed_letter)
-        self.send_keyboard()
+        self._send_keyboard()
 
     def check_game_over(self):
         if self.status == 0:

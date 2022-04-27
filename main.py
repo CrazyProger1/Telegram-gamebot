@@ -14,7 +14,9 @@ class App:
 
         if player is None:
             self.players.update({user.id: Player(user.id, self.bot, user.first_name)})
+
             player = self.players.get(user.id)
+            print(user.id)
 
         return player
 
@@ -35,7 +37,7 @@ class App:
 
         callback_type = data.get("type")
 
-        if callback_type == "game selecting":
+        if callback_type == "game selecting" and not player.in_game():
             player.set_game(data.get("data"))
             player.start_game()
 
