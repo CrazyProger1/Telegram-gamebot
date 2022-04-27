@@ -76,3 +76,6 @@ class Player:
 
     def game_over(self):
         self._game = None
+
+    def __repr__(self):
+        return f"Player< firstname({self.firstname}) id({self._id}) >"

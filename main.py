@@ -16,7 +16,7 @@ class App:
             self.players.update({user.id: Player(user.id, self.bot, user.first_name)})
 
             player = self.players.get(user.id)
-            print(user.id)
+            print("New player: ", player)
 
         return player
 
